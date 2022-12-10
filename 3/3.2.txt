@@ -1,0 +1,204 @@
+#include<iostream>
+#include<ostream>
+using namespace std;
+
+template<class T>
+class SparseMatrix;
+
+template<class T>
+class Term {
+	friend SparseMatrix<T>;
+	template<class TT>friend ostream& operator<<(ostream&, const SparseMatrix<TT>&);
+public:
+	Term(int i, int j, T val) { row = i, col = j, value = val; }
+	Term() {}
+private:
+	int row, col;
+	T value;
+};
+
+template<class T>
+class SparseMatrix {
+	template<class TT>friend ostream& operator<<(ostream&, const SparseMatrix<TT>&);
+	//friend istream& operator>>(istream&, SparseMatrix<T>&);
+public:
+	SparseMatrix(int maxterms);
+	SparseMatrix(int maxterms, int col, int row);
+	//~SparseMatrix();
+	void Add(const SparseMatrix<T>&, SparseMatrix<T>&);
+	void Append(const Term<T>&);
+	void Transposition(SparseMatrix<T>& b);
+	void Multiplication(const SparseMatrix<T>&, SparseMatrix<T>&);
+private:
+	int rows, columns;
+	int terms;
+	Term<T>* a;
+	int Maxterms;
+};
+
+template<class T>
+ostream& operator<<(ostream& out, const SparseMatrix<T>& a) {
+	out << "rows=" << a.rows << " columns=" << a.columns << " terms= " << a.terms << endl;
+	for (int i = 0; i < a.terms; i++)
+		out << "a(" << a.a[i].row << "," << a.a[i].col << ")=" << a.a[i].value << endl;
+	return out;
+}
+
+template<class T>
+SparseMatrix<T>::SparseMatrix(int maxterms) {
+	if (maxterms <= 0)cout << "wrong";
+	Maxterms = maxterms;
+	a = new Term<T>[Maxterms];
+	terms = 0;
+	rows = columns = 0;
+}
+
+template<class T>
+SparseMatrix<T>::SparseMatrix(int maxterms, int col, int row) {
+	if (maxterms <= 0)cout << "wrong";
+	Maxterms = maxterms;
+	a = new Term<T>[Maxterms];
+	terms = 0;
+	rows = row, columns = col;
+}
+
+template<class T>
+void SparseMatrix<T>::Add(const SparseMatrix<T>& x, SparseMatrix<T>& a) {
+	int ct = 0, cx = 0;
+	a.rows = max(this->rows, x.rows);
+	a.columns = max(this->columns, x.columns);
+	while (ct < this->terms && cx < x.terms) {
+		//计算二者行主次序编号
+		int indt = a[ct].row * a.columns + a[ct].col;
+		int indx = x.a[cx].row * a.columns + x.a[cx].col;
+		//矩阵相加
+		if (indt == indx) {
+			if (a[ct].value + x.a[cx].value) {
+				Term<T> t;
+				t.col = a[ct].col;
+				t.row = a[ct].row;
+				t.value = a[ct].value + x.a[cx].value;
+				a.Append(t);
+			}
+			ct++, cx++;
+		}
+		else if (indt < indx) {
+			a.Append(a[ct++]);
+		}
+		else {
+			a.Append(x.a[cx++]);
+		}
+	}
+	while (ct < this->terms)a.Append(a[ct++]);
+	while (cx < x.terms)a.Append(x.a[cx++]);
+}
+
+template<class T>
+void SparseMatrix<T>::Append(const Term<T>& x) {
+	a[terms++] = x;
+	rows = max(x.row, rows);
+	columns = max(x.col, columns);
+}
+
+template<class T>
+void SparseMatrix<T>::Transposition(SparseMatrix<T>& b) {
+	b.rows = columns;
+	b.columns = rows;
+	b.terms = terms;
+
+	int* Colsize, * Rownext;
+	Colsize = new int[columns + 1];
+	Rownext = new int[columns + 1];
+
+	for (int i = 1; i <= columns; i++)Colsize[i] = 0;
+	for (int i = 0; i < terms; i++)Colsize[a[i].col]++;
+	Rownext[1] = 0;
+	for (int i = 2; i <= columns; i++)Rownext[i] = Rownext[i - 1] + Colsize[i - 1];
+
+	for (int i = 0; i < terms; i++) {
+		int j = Rownext[a[i].col]++;
+		b.a[j].col = a[i].row;
+		b.a[j].row = a[i].col;
+		b.a[j].value = a[j].value;
+	}
+}
+
+template<class T>
+void SparseMatrix<T>::Multiplication(const SparseMatrix<T>& b, SparseMatrix<T>& c) {
+	if (columns != b.rows) {
+		cout << "wrong";
+		return;
+	}
+
+	c.rows = rows;
+	c.columns = b.columns;
+	c.terms = 0;
+	//初始化结果矩阵
+
+	int* rownext, * rownextb;
+	int* rowsize, * rowsizeb;
+	rownext = new int[rows + 1];
+	rownextb = new int[b.rows + 1];
+	rowsize = new int[rows + 1];
+	rowsizeb = new int[b.rows + 1];
+	for (int i = 1; i <= rows; i++)rowsize[i] = 0;
+	for (int i = 0; i < terms; i++)rowsize[a[i].row]++;
+	rownext[1] = 0;
+	for (int i = 2; i <= rows; i++)rownext[i] = rownext[i - 1] + rowsize[i - 1];
+	for (int i = 1; i <= b.rows; i++)rowsizeb[i] = 0;
+	for (int i = 0; i < b.terms; i++)rowsizeb[b.a[i].row]++;
+	rownextb[1] = 0;
+	for (int i = 2; i <= b.rows; i++)rownextb[i] = rownextb[i - 1] + rowsizeb[i - 1];
+	//计算*this和b矩阵中每行第一个非零元素在一维数组a中的位置
+
+	T* temp = new T[b.columns + 1];//临时存储数据
+	for (int i = 1; i <= c.rows; i++) {//遍历第一个矩阵的每一行
+
+		for (int i = 1; i <= b.columns; i++)temp[i] = 0;//每次循环都清零
+
+		int p;
+		if (i < c.rows)p = rownext[i + 1];
+		else p = terms;
+
+		for (int j = rownext[i]; j < p; j++) {//处理第一个矩阵中第i行的每一个非零元素,结果为最终矩阵的第i行
+			int coll;
+			if (a[j].col < b.rows)coll = rownextb[a[j].col + 1];
+			else coll = b.terms;
+
+			for (int k = rownextb[a[j].col]; k < coll; k++) {//遍历第一个非零元素对应列的第二个矩阵的行
+				int pos = b.a[k].col;
+				temp[pos] += a[j].value * b.a[k].value;
+			}
+		}
+
+		for (int t = 1; t <= b.columns; t++)
+			if (temp[t]) {
+				Term<T> x;
+				x.col = t, x.row = i;
+				x.value = temp[t];
+				c.Append(x);
+			}
+	}
+
+}
+
+int main() {
+	SparseMatrix<int> a(100), b(100), c(100);
+	int am, an, bm, bn, terms;
+	cin >> am >> an >> terms;
+	int i, j, value;
+	for (int t = 0; t < terms; t++) {
+		cin >> i >> j >> value;
+		Term<int> x(i, j, value);
+		a.Append(x);
+	}
+	cin >> bm >> bn >> terms;
+	for (int t = 0; t < terms; t++) {
+		cin >> i >> j >> value;
+		Term<int> x(i, j, value);
+		b.Append(x);
+	}
+
+	a.Multiplication(b, c);
+	cout << a << b << c;
+}

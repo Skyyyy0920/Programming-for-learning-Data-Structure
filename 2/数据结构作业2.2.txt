@@ -1,0 +1,143 @@
+#include<iostream>
+using namespace std;
+
+template<class T>
+class DoubleLinkedList;
+
+template<class T>
+class DoubleNode {
+	friend DoubleLinkedList<T>;
+private:
+	T data;
+	DoubleNode<T>* left, * right;
+};
+
+template<class T>
+class DoubleLinkedList {
+public:
+	DoubleLinkedList() { leftend = rightend = 0; length = 0; }
+	//~DoubleLinkedList()
+	int Getlength()const { return length; }
+	//bool Find(int k, const T& x)const;
+	//int Search(const T& x)const;
+	void Insert(int k, const T& x);
+	void PushBack(const T& x);
+	void Split();
+	void Output(ostream& out)const;
+	T GetNowNode();
+	void Reset() { now = leftend; }
+private:
+	DoubleNode<T>* leftend, * rightend, * now;
+	int length;
+};
+
+template<class T>
+void DoubleLinkedList<T>::Output(ostream& out)const {
+	DoubleNode<T>* p = leftend;
+	while (p) {
+		out << p->data << " ";
+		p = p->right;
+	}
+	cout << endl;
+}
+template<class T>
+ostream& operator<<(ostream& out, const DoubleLinkedList<T>& x) {
+	x.Output(out);
+	return out;
+}
+
+template<class T>
+void DoubleLinkedList<T>::Insert(int k, const T& x) {
+	if (k < 0) {
+		cout << "wrong";
+		return;
+	}//目标过小
+	DoubleNode<T>* p = leftend;
+	for (int i = 1; i < k && p; i++) p = p->right;
+	if (!p) {
+		cout << "wrong";
+		return;
+	}//目标过大
+	DoubleNode<T>* q = new DoubleNode<T>;
+	q->data = x;
+	q->right = 0;
+	if (k == 0) {//如果插入到首节点
+		q->right = leftend->right;
+		leftend = q;
+		return;
+	}
+	if (p->right) {//如果右面还有节点
+		DoubleNode<T>* s = p->right;
+		s->left = q;
+		q->right = s;
+		p->right = q;
+		q->left = p;
+	}
+	else {
+		p->right = q;
+		q->left = p;
+	}
+
+}
+
+template<class T>
+void DoubleLinkedList<T>::PushBack(const T& x) {
+	length++;
+	DoubleNode<T>* p = new DoubleNode<T>;
+	p->data = x;
+	p->right = 0;
+	if (leftend) {
+		rightend->right = p;
+		p->left = rightend;
+		rightend = p;
+	}//链表不为空
+	else {
+		leftend = rightend = p;
+		now = leftend;
+		leftend->right = p;
+	}//链表为空
+}
+
+template<class T>
+T DoubleLinkedList<T>::GetNowNode() {
+	T x = now->data;
+	now = now->right;
+	return x;
+}
+
+template<class T>
+void split(DoubleLinkedList<T>& a, DoubleLinkedList<T>& b, DoubleLinkedList<T>& c) {
+	int i;
+	for (i = 1; i <= c.Getlength() - 1; i += 2) {
+		a.PushBack(c.GetNowNode());
+		b.PushBack(c.GetNowNode());
+	}
+	if (i <= c.Getlength())a.PushBack(c.GetNowNode());
+	c.Reset();
+}
+
+template<class T>
+void DoubleLinkedList<T>::Split() {
+	int len = length;
+	int i;
+	for (i = 1; i <= len - 1; i += 2) {
+		PushBack(GetNowNode());
+		GetNowNode();
+	}
+	if (i <= len)PushBack(GetNowNode());
+	Reset();
+	GetNowNode();
+	for (i = 2; i <= len; i += 2) {
+		PushBack(GetNowNode());
+		GetNowNode();
+	}
+}
+
+int main() {
+	DoubleLinkedList<int> a, b, c;
+	for (int i = 1; i < 20; i++)c.PushBack(i);
+	split(a, b, c);
+	cout << a << b << c;
+	c.Split();
+	cout << c;
+}

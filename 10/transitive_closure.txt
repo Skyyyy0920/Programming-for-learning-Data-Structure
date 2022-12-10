@@ -1,0 +1,60 @@
+#include <iostream>
+#include <cstring>
+using namespace std;
+
+const int N = 1000;
+int p[N];
+int d[N][N];
+int tc[N][N];
+
+int find(int x)
+{
+    if (p[x] == x) return x;
+    return p[x] = find(p[x]);
+}
+
+int main() {
+    for (int i = 0; i < N; i++) {
+        p[i] = i;
+    }
+    memset(d, 0, sizeof d);
+    memset(tc, 0, sizeof tc);
+
+    int n, m;
+    cin >> m >> n;
+    for (int i = 0; i < m; i++) {
+        int u, v;
+        cin >> u >> v;
+        d[u][v] = d[v][u] = d[u][u] = d[v][v] = 1;
+        if (p[u] == u && p[v] == v) {
+            p[v] = u;
+        }
+        else if (p[u] == u && p[v] != v) {
+            p[u] = find(v);
+        }
+        else if (p[u] != u && p[v] == v) {
+            p[v] = find(u);
+        }
+        else {
+            int x = find(u);
+            int y = find(v);
+            p[x] = y;
+        }
+    }
+    for (int i = 1; i <= n; i++) {
+        for (int j = 1; j <= n; j++) {
+            int u = find(i), v = find(j);
+            if (u == v && d[i][j] != 1) {
+                tc[i][j] = 1;
+            }
+        }
+    }
+    for (int i = 1; i <= n; i++) {
+        for (int j = 1; j <= n; j++) {
+            cout << tc[i][j] << ' ';
+        }
+        cout << endl;
+    }
+}
+
+

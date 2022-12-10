@@ -1,0 +1,146 @@
+#include<iostream>
+using namespace std;
+
+//如何正确地判断使用循环数组的队列是否为空与是否已满，是问题的关键。通过使front始终指向队首元素的前一位，
+//而rear始终指向队尾元素当前位置，即可区分为空与已满的情况。其中，若队列为空，当且仅当front=rear；若队列已满，当且仅当front=(rear+1)%MaxSize
+
+template<class T>
+class DoubleEndedQueue {
+public:
+	DoubleEndedQueue(int MaxQueueSize = 20);
+	bool IsEmpty() { return front == rear; }
+	bool IsFull() { return front == (rear + 1) % MaxSize; }
+	void Left();
+	void Right();
+	void AddLeft(const T&);
+	void AddRight(const T&);
+	void DeleteRight();
+	void DeleteLeft();
+	void Output();
+private:
+	T* queue;
+	int front, rear;
+	int MaxSize;
+};
+
+template<class T>
+DoubleEndedQueue<T>::DoubleEndedQueue(int MaxQueueSize) {
+	MaxSize = MaxQueueSize + 1;
+	queue = new T[MaxSize];
+	front = rear = 0;
+}
+
+template<class T>
+void DoubleEndedQueue<T>::Left() {
+	if (IsEmpty()) {
+		cout << "EMPTY";
+		return;
+	}
+	cout << queue[front + 1];
+}
+
+template<class T>
+void DoubleEndedQueue<T>::Right() {
+	if (IsEmpty()) {
+		cout << "EMPTY";
+		return;
+	}
+	cout << queue[rear];
+}
+
+template<class T>
+void DoubleEndedQueue<T>::AddLeft(const T& x) {
+	if (IsFull()) {
+		cout << "FULL";
+		return;
+	}
+	queue[front] = x;
+	front = (front - 1 + MaxSize) % MaxSize;
+
+	Output();
+}
+
+template<class T>
+void DoubleEndedQueue<T>::AddRight(const T& x) {
+	if (IsFull()) {
+		cout << "FULL";
+		return;
+	}
+	rear = (rear + 1) % MaxSize;
+	queue[rear] = x;
+
+	Output();
+}
+
+template<class T>
+void DoubleEndedQueue<T>::DeleteLeft() {
+	if (IsEmpty()) {
+		cout << "EMPTY";
+		return;
+	}
+	front = (front + 1) % MaxSize;
+	Output();
+}
+
+template<class T>
+void DoubleEndedQueue<T>::DeleteRight() {
+	if (IsEmpty()) {
+		cout << "EMPTY";
+		return;
+	}
+	rear = (rear - 1 + MaxSize) % MaxSize;
+	Output();
+}
+
+template<class T>
+void DoubleEndedQueue<T>::Output() {
+	if (IsEmpty()) {
+		cout << endl;
+		return;
+	}
+	if (front < rear) {
+		for (int i = front + 1; i <= rear; i++)cout << queue[i] << " ";
+	}
+	else {
+		for (int i = front + 1; i < MaxSize; i++)cout << queue[i] << " ";
+		for (int i = 0; i <= rear; i++)cout << queue[i] << " ";
+	}
+	cout << endl;
+}
+
+int main() {
+	string s;
+	DoubleEndedQueue<int> a(100);
+	int x;
+	while (cin >> s) {
+		if (s == "End")return 0;
+		if (s == "AddRight") {
+			cin >> x;
+			a.AddRight(x);
+		}
+		else if (s == "AddLeft") {
+			cin >> x;
+			a.AddLeft(x);
+		}
+		else if (s == "IsEmpty") {
+			if (a.IsEmpty())cout << "Yes" << endl;
+			else cout << "No" << endl;
+		}
+		else if (s == "IsFull") {
+			if (a.IsFull())cout << "Yes" << endl;
+			else cout << "No" << endl;
+		}
+		else if (s == "Left") {
+			a.Left();
+		}
+		else if (s == "Right") {
+			a.Right();
+		}
+		else if (s == "DeleteLeft") {
+			a.DeleteLeft();
+		}
+		else if (s == "DeleteRight") {
+			a.DeleteRight();
+		}
+	}
+}

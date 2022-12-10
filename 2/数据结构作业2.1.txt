@@ -1,0 +1,114 @@
+#include<iostream>
+using namespace std;
+
+template<class T>
+class ExtendedChain;
+
+template<class T>
+class Node {
+	friend ExtendedChain<T>;
+private:
+	Node<T>* next;
+	T data;
+};
+
+template<class T>
+class ExtendedChain {
+public:
+	ExtendedChain() { first = 0; length = 0; last = 0; }
+	//~ExtendedChain();
+	void PushBack(const T& x);
+	void Insert(int k, const T& x);
+	void Output(ostream& out)const;
+	int GetLength()const { return length; }
+	T GetNow();
+	void Reset() { now = first; }
+private:
+	Node<T>* first, * last, * now = 0;
+	int length;
+};
+
+template<class T>
+void ExtendedChain<T>::PushBack(const T& x) {
+	length++;
+	Node<T>* p = new Node<T>;
+	p->data = x;
+	p->next = 0;//这句话很重要！！
+	if (first) { //如果链表不为空
+		last->next = p;
+		last = p;
+	}
+	else {
+		now = first = last = p;
+	}
+}
+
+template<class T>
+void ExtendedChain<T>::Insert(int k, const T& x) {
+	if (k < 0) {
+		cout << "wrong";
+		return;
+	}//目标过小
+	Node<T>* p = new Node<T>;
+	p->data = x;
+	if (k == 0) {
+		p->next = first;
+		first = p;
+		length++;
+		return;
+	}//如果是插到链表头部
+	Node<T>* current = first;
+	for (int i = 1; i < k && current; i++)current = current->next;//找到第k个
+	if (!current) {
+		cout << "wrong";
+		return;
+	}//目标过大
+	p->next = current->next;
+	current->next = p;
+	length++;
+}
+
+template<class T>
+void ExtendedChain<T>::Output(ostream& out)const {
+	Node<T>* current = first;
+	while (current) {
+		out << current->data << " ";
+		current = current->next;
+	}
+	cout << endl;
+}
+template<class T>
+ostream& operator<<(ostream& out, const ExtendedChain<T>& x) {
+	x.Output(out);
+	return out;
+}
+
+template<class T>
+T ExtendedChain<T>::GetNow() {
+	T x = now->data;
+	now = now->next;
+	return x;
+}
+
+template<class T>
+ExtendedChain<T> meld(ExtendedChain<T>& a, ExtendedChain<T>& b) {
+	ExtendedChain<T> c;
+	int i, j;
+	for (i = 1, j = 1; i <= a.GetLength() && j <= b.GetLength(); i++, j++) {
+		c.PushBack(a.GetNow());
+		c.PushBack(b.GetNow());
+	}
+	for (; i <= a.GetLength(); i++)c.PushBack(a.GetNow());
+	for (; j <= b.GetLength(); j++)c.PushBack(b.GetNow());
+	a.Reset();
+	b.Reset();
+	return c;
+}
+
+int main() {
+	ExtendedChain<int> a, b, c;
+	for (int i = 1; i < 10; i++)a.PushBack(i);
+	for (int i = 9; i > 0; i--)b.PushBack(i);
+	c = meld(a, b);
+	cout << a << b << c;
+}

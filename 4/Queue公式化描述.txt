@@ -1,0 +1,55 @@
+#include<iostream>
+using namespace std;
+
+template<class T>
+class Queue {
+public:
+	Queue(int MaxQueueSize = 10);
+	~Queue() { delete queue[]; }
+	bool IsEmpty()const { return front == rear; }
+	bool IsFull()const { return (front == (rear + 1) % MaxSize) ? 1 : 0; }
+	T First()const;//return front element
+	T Last()const;//return rear element
+	Queue<T>& Add(const T& x);
+	Queue<T>& Delete(T& x);
+private:
+	int front;//队首
+	int rear;//队尾
+	int MaxSize;//队列容量
+	T* queue;
+};
+
+template<class T>
+Queue<T>::Queue(int MaxQueueSize) {
+	MaxSize = MaxQueueSize + 1;
+	queue = new T[MaxSize];
+	front = rear = 0;
+}
+
+template<class T>
+T Queue<T>::First()const {
+	if (IsEmpty())cout << "wrong";
+	return queue[(front + 1) % MaxSize];
+}
+
+template<class T>
+T Queue<T>::Last()const {
+	if (IsEmpty())cout << "wrong";
+	return queue[rear];
+}
+
+template<class T>
+Queue<T>& Queue<T>::Add(const T& x) {
+	if (IsFull())cout << "wrong";
+	rear = (rear + 1) % MaxSize;
+	queue[rear] = x;
+	return *this;
+}
+
+template<class T>
+Queue<T>& Queue<T>::Delete(T& x) {
+	if (IsEmpty())cout << "wrong";
+	front = (front + 1) % MaxSize;
+	x = queue[front];
+	return *this;
+}

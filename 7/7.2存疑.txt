@@ -1,0 +1,265 @@
+#include<iostream>
+#include<algorithm>
+#include<string>
+#include<queue>
+#include<fstream>
+#include<functional>
+#include<bitset>
+using namespace std;
+
+
+
+
+
+疑问：如何将转换好的01串以char类型存入文件，如何将压缩文件读取，转化为二进制字符串
+
+
+
+
+
+
+
+
+// 1.读取文本
+// 2.统计文本中各字母出现频率 
+// 3.构建Huffman树
+// 4.根据Huffman树构造Huffma编码
+// 5.根据Huffman编码将文本压缩
+
+class TreeNode {
+public:
+	TreeNode() { LeftChild = RightChild = 0; character = 0; }
+	TreeNode(char a, int w) { character = a; weight = w; LeftChild = RightChild = 0; }
+
+	char GetCharacter()const { return character; }
+	int GetWeight()const { return weight; }
+	TreeNode* GetLeftChild()const { return LeftChild; }
+	TreeNode* GetRightChild()const { return RightChild; }
+
+	void setLeft(TreeNode* left) { LeftChild = left; }
+	void setRight(TreeNode* right) { RightChild = right; }
+	void setWeight(int we) { weight = we; }
+	void setCharacter(char ch) { character = ch; }
+
+private:
+	char character;
+	int weight;
+	TreeNode* LeftChild,
+		* RightChild;
+};
+
+struct cmp {
+	bool operator()(TreeNode* a, TreeNode* b)const {
+		return a->GetWeight() > b->GetWeight();
+	}
+};
+
+class HuffmanTree {
+public:
+	HuffmanTree(string&);
+	TreeNode* GetRoot() { return root; }
+	TreeNode* MergeTreeNode(TreeNode*, TreeNode*);
+private:
+	TreeNode* root;
+};
+
+HuffmanTree::HuffmanTree(string& s) {
+	// 1.计算每个字母出现的频率,并生成节点压入队列
+	priority_queue<TreeNode*, vector<TreeNode*>, cmp> queue;
+	sort(s.begin(), s.end());
+	int count = 0;
+	char curcharacter = s[0];
+	for (int i = 0; s[i] != '\0'; i++) {
+		if (s[i] == curcharacter) {
+			count++;
+		}
+		else {
+			TreeNode* n = new TreeNode(curcharacter, count);
+			queue.push(n);
+			curcharacter = s[i];
+			count = 1;
+		}
+	}
+	TreeNode* n = new TreeNode(curcharacter, count);
+	queue.push(n);
+	
+	// 2.构造Huffman树
+	while (queue.size() > 1) {
+		TreeNode* node1 = queue.top();
+		queue.pop();
+		TreeNode* node2 = queue.top();
+		queue.pop();
+		TreeNode* node = MergeTreeNode(node1, node2);
+		queue.push(node);
+	}
+	root = queue.top();
+
+// 这里记录一下，priority_queue第三个参数的用法
+// 因为priority_queue的第三个参数是用来规定是最大堆还是最小堆，如果是自定义的类，那么需要给出比较方法
+// 但是由于自定义的operator函数不允许传入两个类对象指针，因此不能通过类内重载运算符来实现
+// 解决方法是另外写一个cmp类，重写仿函数，然后将cmp作为第三个参数传给priority_queue
+
+}
+
+TreeNode* HuffmanTree::MergeTreeNode(TreeNode* left, TreeNode* right) {
+	TreeNode* newroot = new TreeNode;
+	newroot->setWeight(left->GetWeight() + right->GetWeight());
+	newroot->setLeft(left);
+	newroot->setRight(right);
+	return newroot;
+}
+
+class HuffmanCode {
+public:
+	HuffmanCode(string Filename) { filename = Filename; for (int i = 0; i < 1 << 8; i++)HuffmanTable[i] = "-1"; }
+	void ReadFile();
+	void GenerateCompressFile();
+	void GenerateUncompressFile();
+	void GenerateHuffmanTable(string, TreeNode*);
+	void OutputHuffmanTable();
+private:
+	HuffmanTree* huffman_tree;
+	string str;
+	string filename;
+	string compressedFileName;
+	string HuffmanTable[1 << 8];
+};
+
+void HuffmanCode::GenerateHuffmanTable(string huffman_code, TreeNode* n) {
+	if (n->GetCharacter() != 0) {
+		HuffmanTable[int(n->GetCharacter())] = huffman_code;
+		return;
+	}
+	// 左零右一
+	if (n->GetLeftChild()!=0)
+		GenerateHuffmanTable(huffman_code + "0", n->GetLeftChild());
+	if (n->GetRightChild()!=0)
+		GenerateHuffmanTable(huffman_code + "1", n->GetRightChild());
+}
+
+void HuffmanCode::ReadFile() {
+	ifstream file(filename);
+	try {
+		if (!file.is_open()) {
+			throw "file not find";
+		}
+	}
+	catch (const char* str) {
+		cout << str << endl;
+		exit(1);
+	}
+
+	char chr;
+	file.get(chr);
+	while (!file.eof()) {
+		str += chr;
+		file.get(chr);
+	}
+	file.close();
+}
+
+void HuffmanCode::OutputHuffmanTable() {
+	huffman_tree = new HuffmanTree(str);
+	GenerateHuffmanTable("", huffman_tree->GetRoot());
+	string OutFileName = filename.substr(0, filename.length() - 4) + "_HuffmanTable.txt";
+	fstream OutFileStream(OutFileName, ios::app);
+	try {
+		if (!OutFileStream.is_open()) {
+			throw "OutFileStream not find";
+		}
+	}
+	catch (const char* str) {
+		cout << str << endl;
+		exit(1);
+	}
+
+	for (int i = 0; i < 1 << 8; i++) {
+		if (HuffmanTable[i] != "-1") {
+			OutFileStream << (char)i << ' ' << HuffmanTable[i] << endl;
+		}
+	}
+	OutFileStream.close();
+}
+
+void HuffmanCode::GenerateCompressFile() {
+	string compressfile = filename.substr(0, filename.length() - 4) + "_CompressFile.txt";
+	compressedFileName = compressfile;
+	fstream inFile(filename);//打开待压缩文件
+	try {
+		if (!inFile.is_open()) {
+			throw "fail to open the file";
+		}
+	}
+	catch (const char* str) {
+		cout << str << endl;
+		exit(1);
+	}
+	char ch;
+	string codestream;//01串
+	//逐位读取文件中的字符，根据编码集将其转换为01串存储在codestream中
+	inFile.get(ch);
+	while (!inFile.eof()) {
+		codestream += HuffmanTable[int(ch)];
+		inFile.get(ch);
+	}
+	inFile.close();
+
+	fstream outFile;//打开压缩后文件
+	outFile.open(compressfile, ios::out | ios::binary);
+	while (codestream.size() >= 8) {
+		bitset<8>bits(codestream, 0, 8);
+		codestream.erase(0, 8);
+		cout << bits;
+		outFile << static_cast<char>(bits.to_ulong());
+	}
+	if (!codestream.empty()) {
+		unsigned long loc = codestream.size();
+		bitset<8>bits(codestream, 0, loc);
+		outFile << static_cast<char>(bits.to_ulong());
+		outFile << static_cast<char>(loc);
+	}
+	outFile.close();
+}
+
+void HuffmanCode::GenerateUncompressFile() {
+	fstream compressfile(compressedFileName);
+	char ch;
+	string st;
+	compressfile.get(ch);
+	while (!compressfile.eof()) {
+		char temp[100];
+		_itoa_s(255 - int(ch), temp, 2);
+		cout << temp << endl;
+		for (int i = 0; temp[i]; i++)st += temp[i];
+		compressfile.get(ch);
+		memset(temp, 0, sizeof(temp));
+	}
+
+	string res;
+	TreeNode* p = huffman_tree->GetRoot();
+	for (int i = 0; st[i]; i++) {
+		if (!p->GetLeftChild() && !p->GetRightChild()) {
+			res += p->GetCharacter();
+			p = huffman_tree->GetRoot();
+		}
+		if (st[i] == '0') {
+			p = p->GetLeftChild();
+		}
+		if (st[i] == '1') {
+			p = p->GetRightChild();
+		}
+	}
+	cout << "the uncompressed file is: " << res << endl;
+}
+
+int main() {
+	HuffmanCode huffmancode("test2.txt");
+	huffmancode.ReadFile();
+	cout << "now compress the file:" << endl;
+	huffmancode.OutputHuffmanTable();
+	cout << "now HuffmanTable is initialize successfully" << endl;
+	cout << "the binary code in compress file is:" << endl;
+	huffmancode.GenerateCompressFile();
+	cout << endl;
+	huffmancode.GenerateUncompressFile();
+}

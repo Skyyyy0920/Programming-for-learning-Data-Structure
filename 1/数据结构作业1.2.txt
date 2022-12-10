@@ -1,0 +1,74 @@
+#include<iostream>
+#include<string>
+#include<iomanip>
+#include<math.h>
+#include<stdio.h>
+#include<fstream>
+using namespace std;
+
+char set[28];
+bool flag[28];
+int n;
+
+void init() {
+	for (int i = 1; i < 27; i++)
+		set[i] = 'a' + i - 1;
+}
+
+void dfs(int m) {
+	if (m >= n) {
+		bool x = 0;
+		for (int i = 1; i <= n; i++) {
+			if (flag[i]) {
+				cout << set[i] << " ";
+				x = 1;
+			}
+		}
+		if (x) {
+			cout << endl;
+		}
+		return;
+	}
+	flag[m + 1] = 0;
+	dfs(m + 1);
+	flag[m + 1] = 1;
+	dfs(m + 1);
+}
+
+int main() {
+	init();
+	ifstream text("input.txt");
+	char ch;
+	text.get(ch);
+	string res = "";
+	while (!text.eof()) {
+		res += ch;
+		text.get(ch);
+	}
+	//得到txt文件中的内容
+
+	int i = 0;
+	int num = 0;
+	while (res[i]) {
+		if (res[i] >= '0' && res[i] <= '9') {
+			num = num * 10 + (res[i] - '0');
+			i++;
+		}
+		else {
+			cout << "WRONG";
+			return 0;
+		}
+	}
+	if (num > 0 && num <= 90);
+	else {
+		cout << "WRONG";
+		return 0;
+	}
+	//处理得到的内容
+	
+	n = num;
+	flag[1] = 0;
+	dfs(1);
+	flag[1] = 1;
+	dfs(1);
+}

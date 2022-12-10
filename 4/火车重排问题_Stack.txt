@@ -1,0 +1,113 @@
+#include<iostream>
+using namespace std;
+
+template<class T>
+class Stack {
+public:
+	Stack(int MaxStackSize = 10) { top = -1; MaxTop = MaxStackSize; stack = new T[MaxTop + 1]; }
+	bool IsEmpty()const { return top == -1; }
+	bool IsFull()const { return top == MaxTop; }
+	T Top()const;
+	Stack<T>& Push(const T& x);
+	Stack<T>& Pop(T& x);
+private:
+	int top;
+	int MaxTop;
+	T* stack;
+};
+
+template<class T>
+T Stack<T>::Top()const {
+	if (IsEmpty())cout << "wrong";
+	return stack[top];
+}
+
+template<class T>
+Stack<T>& Stack<T>::Push(const T& x) {
+	if (IsFull())cout << "worng";
+	stack[++top] = x;
+	return *this;
+}
+
+template<class T>
+Stack<T>& Stack<T>::Pop(T& x) {
+	if (IsEmpty())cout << "wrong";
+	x = stack[top--];
+	return *this;
+}
+
+void Output(int& MinH, int& MinS, Stack<int> H[], int k, int n) {
+	//move from hold to output and update MinH and MinS
+
+	int c;//car index
+
+	//delete smallest car from MinS
+	H[MinS].Pop(c);
+    cout << "move car" << MinH << " from holding track" << MinS << " to output";
+	cout << endl;
+
+	//find new MinH and MinS by checking topcars of all tracks
+	MinH = n + 1;
+	for (int i = 1; i <= k; i++) {
+		if (!H[i].IsEmpty() && (MinH > H[i].Top()))MinH = H[i].Top(), MinS = i;
+	}
+
+}
+
+bool Hold(int c, int& MinH, int& MinS, Stack<int>H[], int k, int n) {
+	//add car c to a holding track
+	//find best track for car c
+	int BestTrack = 0, TrackTop = n + 1;
+	for (int i = 1; i <= k; i++) {
+		if (!H[i].IsEmpty()) {
+			if (c < H[i].Top() && H[i].Top() < TrackTop)
+				TrackTop = H[i].Top(), BestTrack = i;
+		}
+		else {
+			if (!BestTrack)BestTrack = i;
+		}
+	}
+	if (!BestTrack)return false;
+	H[BestTrack].Push(c);
+	cout << "move car" << c << " from input to holding track" << BestTrack << endl;
+
+	//update MinH and MinS if it is necessary
+	if (c < MinH) MinH = c, MinS = BestTrack;
+
+	return true;
+}
+
+bool Railroad(int p[], int n, int k) {
+	//k track rearrangement of car order p[1:n]
+	//return true if successful,false if impossible
+
+	Stack<int>* H;
+	H = new Stack<int>[k + 1];
+	
+	int NowOut = 1;//next car to output
+	int MinH = n + 1;//smallest car in a track
+	int MinS;//track with MinH
+
+	//rearrange cars
+	for (int i = 1; i <= n; i++) {
+		if (p[i] == NowOut) {
+			cout << "move car" << p[i] << " from input to output";
+			cout << endl;
+			NowOut++;
+			while (MinH == NowOut) {
+				Output(MinH,MinS,H,k,n);
+				NowOut++;
+			}
+		}
+		else {
+			if (!Hold(p[i], MinH, MinS, H, k, n)) return false;
+		}
+	}
+	return true;
+}
+
+
+
+int main() {
+
+}

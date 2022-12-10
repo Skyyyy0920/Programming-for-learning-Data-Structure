@@ -1,0 +1,78 @@
+#include<iostream>
+using namespace std;
+
+template<class T>
+class Stack;
+template<class T>
+class node {
+	template<class TT> friend ostream& operator<<(ostream& out, const Stack<TT>& x);
+	friend Stack<T>;
+private:
+	T data;
+	node<T>* next;
+};
+
+template<class T>
+class Stack {
+	template<class TT> friend ostream& operator<<(ostream& out, const Stack<TT>& x);
+public:
+	Stack(){top = 0; length = 0; }
+	bool IsEmpty()const { return length == 0; }
+	bool IsFull()const { return false; }
+	T Top()const;
+	void Push(const T& x);
+	void Pop(T& x);
+private:
+	int length;
+	node<T>* top;
+};
+
+template<class T>
+ostream& operator<<(ostream& out, const Stack<T>& x) {
+	node<T>* p = x.top;
+	while (p) {
+		out << p->data << " ";
+		p = p->next;
+	}
+	return out;
+}
+
+template<class T>
+T Stack<T>::Top()const {
+	if (IsEmpty())cout << "wrong";
+	return top->data;
+}
+
+template<class T>
+void Stack<T>::Push(const T& x) {
+	node<T>* p = new node<T>;
+	p->data = x;
+	p->next = top;
+	top = p;
+	length++;
+}
+
+template<class T>
+void Stack<T>::Pop(T& x) {
+	if (IsEmpty())cout << "wrong";
+	node<T>* p = top;
+	top = top->next;
+	x = p->data;
+	delete p;
+}
+
+int main() {
+	char a, str[1001];
+	cin >> a;
+	char s[1001];
+	cin.getline(s, sizeof(s));
+	int i = 0, j = 0;
+	while (s[i]) {
+		if (s[i] != ' ')str[j++] = s[i];
+		i++;
+	}
+	Stack<char> p;
+	for (i = 0; i < j; i++)
+		if (str[i] != a)p.Push(str[i]);
+	cout << p;
+}

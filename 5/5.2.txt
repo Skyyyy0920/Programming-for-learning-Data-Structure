@@ -1,0 +1,121 @@
+#include<iostream>
+#include<limits.h>
+using namespace std;
+
+template<class T>
+struct node {
+	T data;
+	node<T>* next;
+};
+
+template<class T>
+struct chain {
+	chain() { first = 0; }
+	node<T>* first;
+};
+
+template<class T>
+class hashChainsWithTail {
+public:
+	hashChainsWithTail(int div = 23);
+	void Insert(const T&);
+	bool Search(const T&);
+	void Delete(const T&);
+	void Output();
+private:
+	int divisor;
+	chain<T>* hashtable;
+	node<T>* tail;
+	int hash(const int& x) { return abs(x) % divisor; }
+};
+
+template<class T>
+hashChainsWithTail<T>::hashChainsWithTail(int div) {
+	divisor = div;
+	hashtable = new chain<T>[div];
+	tail = new node<T>;
+	tail->next = 0, tail->data = INT_MAX;
+}
+
+template<class T>
+void hashChainsWithTail<T>::Insert(const T& x) {
+	if (Search(x)) {
+		cout << "already have this element" << endl;
+		return;
+	}
+	int h = hash(x);
+	node<T>* p = new node<T>;
+	p->data = x, p->next = 0;
+	if (hashtable[h].first) {
+		p->next = hashtable[h].first;
+		hashtable[h].first = p;
+	}
+	else {
+		p->next = tail;
+		hashtable[h].first = p;
+	}
+}
+
+template<class T>
+bool hashChainsWithTail<T>::Search(const T& x) {
+	int h = hash(x);
+	node<T>* p = hashtable[h].first;
+	if (!p)return false;
+	while (p->data != x && p->data != INT_MAX)p = p->next;
+	if (p->data == x)return true;
+	return false;
+}
+
+template<class T>
+void hashChainsWithTail<T>::Delete(const T& x) {
+	if (!Search(x)) {
+		cout << "cannot delete a nonexist element" << endl;
+		return;
+	}
+	int h = hash(x);
+	node<T>* p = hashtable[h].first;
+	if (p->data == x) {//如果要删的就是第一个节点
+		hashtable[h].first = p->next;
+		return;
+	}
+	while (p->next->data != x) {
+		cout << "*"; p = p->next;//p->next即为要删除的节点
+	}
+	node<T>* q = p->next;
+	p->next = p->next->next;
+	delete q;
+}
+
+template<class T>
+void hashChainsWithTail<T>::Output() {
+	cout << endl;
+	cout << "the elements in this hashtable is:" << endl;
+	for (int i = 0; i < divisor; i++) {
+		node<T>* p = hashtable[i].first;
+		if (!p)continue;
+		if (p->data == INT_MAX)continue;
+		cout << "element in " << i << "th barrel: ";
+		while (p->data != INT_MAX) {
+			cout << p->data << " ";
+			p = p->next;
+		}
+		cout << endl;
+	}
+}
+
+int main() {
+	hashChainsWithTail<int> h;
+	int x;
+	cout << "now insert 10 elements:" << endl;
+	for (int i = 0; i < 10; i++) {
+		cin >> x;
+		h.Insert(x);
+	}
+	cout << endl;
+	cout << "now delete 3 elements:" << endl;
+	for (int i = 0; i < 3; i++) {
+		cin >> x;
+		h.Delete(x);
+	}
+	h.Output();
+}

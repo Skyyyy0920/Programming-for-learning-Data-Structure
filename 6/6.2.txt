@@ -1,0 +1,215 @@
+#include<iostream>
+#include<queue>
+#include<stack>
+#include<cstring>
+using namespace std;
+
+/**************************************************************************************************************************************************************
+要点：
+一.通过栈的相关操作，将中缀表达式转为后缀表达式
+
+中缀表达式转后缀表达式思路步骤分析：
+1 初始化两个栈：运算符栈s1和存储中间结果的栈s2
+2 从左至右扫描中缀表达式
+3 遇到运算符时，比较其与s1栈顶运算符的优先级
+    3.1 如果s1为空，或栈顶运算符为左括号’(’，则直接将此运算符入栈；
+    3.2 否则，如果优先级比栈顶运算符的高，也直接将此运算符入栈；
+    3.3 否则，将s1栈顶的运算符弹出并压入s2中。然后又从3.1步开始进行比较（此时待入栈的操作符还是之前那个，只是栈顶元素已变更）
+4 遇到操作数时，将其压入s2
+5 遇到括号时
+    5.1 如果是左括号’(’，则直接压入s1
+    5.2 如果是右括号’)’，则依次弹出s1栈顶的运算符，并压入s2中，直到遇到左括号’('为止，将这个左括号从s1中弹出丢弃（这时候消除了一对括号）
+6 重复2~5步，直到中缀表达式扫描完成
+7 将s1中剩余的运算符依次弹出并压入s2中
+
+二.通过栈利用后缀表达式构造二叉树
+如同后缀表达式求值一样，我们逐次读取后缀表达式的每一个符号
+        如果符号是操作数，那么我们就建立一个单节点树并将一个指向它的指针推入栈中；
+        如果符号是运算符，则从栈中弹出两棵树T1和T2（先弹出T1），并形成一颗以操作符为根的树，其中T1为右儿子，T2为左儿子；
+        然后将新的树压入栈中，继续上述过程。
+**************************************************************************************************************************************************************/
+
+template<class T>
+class BinaryTree;
+template<class T>
+class treeNode {
+	friend BinaryTree<T>;
+public:
+	treeNode() { leftChild = rightChild = 0, level = 1; }
+	treeNode(T& x) { leftChild = rightChild = 0, level = 1, data = x; }
+	void setLeftChild(treeNode<T>* t);
+	void setRightChild(treeNode<T>* t);
+	void setLeftChild(const T&);
+	void setRightChild(const T&);
+	void setLevel(treeNode<T>*);
+private:
+	treeNode<T>* leftChild, * rightChild;
+	T data;
+	int level;
+};
+
+template<class T>
+void treeNode<T>::setLevel(treeNode<T>* t) {
+	if (t->leftChild) {
+		t->leftChild->level = t->level + 1;
+		setLevel(t->leftChild);
+	}
+	if (t->rightChild) {
+		t->rightChild->level = t->level + 1;
+		setLevel(t->rightChild);
+	}
+}
+
+template<class T>
+void treeNode<T>::setLeftChild(treeNode<T>* t) {
+	leftChild = t;
+	t->level = this->level + 1;
+	setLevel(t);
+}
+
+template<class T>
+void treeNode<T>::setRightChild(treeNode<T>* t) {
+	rightChild = t;
+	t->level = this->level + 1;
+	setLevel(t);
+}
+
+template<class T>
+void treeNode<T>::setLeftChild(const T& x) {
+	treeNode<T>* p = new treeNode<T>;
+	p->level = this->level + 1;
+	p->data = x;
+	this->leftChild = p;
+}
+
+template<class T>
+void treeNode<T>::setRightChild(const T& x) {
+	treeNode<T>* p = new treeNode<T>;
+	p->level = this->level + 1;
+	p->data = x;
+	this->rightChild = p;
+}
+
+template<class T>
+class BinaryTree {
+public:
+	BinaryTree() { root = 0, leafNumber = 0, curHeight = 0; }
+	void setRoot(treeNode<T>* r) { root = r; }
+	void postOrder(treeNode<T>*);
+	void visit(treeNode<T>*);
+	treeNode<T>* getRoot() { return root; }
+private:
+	treeNode<T>* root;
+	int leafNumber;
+	int curHeight;
+};
+
+template<class T>
+void BinaryTree<T>::postOrder(treeNode<T>* t) {
+	if (t) {
+		postOrder(t->rightChild);
+		visit(t);
+		postOrder(t->leftChild);
+	}
+}
+
+template<class T>
+void BinaryTree<T>::visit(treeNode<T>* t) {
+	for (int i = 0; i < t->level - 1; i++)cout << "  ";
+	cout << t->data << endl;
+}
+
+int priority(char op) {
+	if (op == '*' || op == '/')return 1;
+	else if (op == '+' || op == '-')return 0;
+	else return -1;
+}
+
+void transformation(string& s) {
+	//将中缀表达式转为后缀表达式
+	//借助栈实现
+
+	stack<char> s1, s2;//运算符栈s1,存储中间结果栈s2
+	int i = 0;
+	while (s[i]) {
+		if (s[i] >= 'a' && s[i] <= 'z') {
+			//当前扫描为数字,直接入栈s2
+			s2.push(s[i++]);
+		}
+		else if (s[i] == '(') {
+			//当前扫描为'(',直接压入s1
+			s1.push(s[i++]);
+		}
+		else if (s[i] == ')') {
+			//当前扫描为')',依次弹出s1栈顶元素，直到遇到'('为止
+			while (s1.top() != '(') {
+				s2.push(s1.top());
+				s1.pop();
+			}
+			s1.pop();//消灭一对括号
+			i++;
+		}
+		else {
+			//当前扫描为运算符
+
+			if (s1.empty() || s1.top() == '(') {
+				//如果s1为空或栈顶运算符为'(',则直接将该运算符入栈
+				s1.push(s[i++]);
+			}
+			else if (priority(s1.top()) < priority(s[i])) {
+				//如果当前运算符比栈顶运算符优先级高,也直接入栈
+				s1.push(s[i++]);
+			}
+			else {
+				//（当前运算符优先级与栈顶运算符相同或更低）将s1栈顶元素弹出并压入s2中,并重复else块
+				s2.push(s1.top());
+				s1.pop();
+			}
+		}
+	}
+
+	//将s1剩余运算符依次弹出并压入s2
+	while (!s1.empty()) {
+		s2.push(s1.top());
+		s1.pop();
+	}
+
+	//此时s2中栈顶元素为所求后缀表达式尾
+	int t = s2.size();
+	s = s.substr(0, t);
+	for (int i = 0; i < t; i++) {
+		s[t - i - 1] = s2.top();
+		s2.pop();
+	}
+}
+
+int main() {
+	string s;
+	cin >> s;
+	transformation(s);
+	cout << s;
+
+	stack<treeNode<char>*> ss;
+	int i = 0;
+	while (s[i]) {
+		treeNode<char>* p = new treeNode<char>(s[i]);
+		if (s[i] >= 'a' && s[i] <= 'z') {
+			//如果是操作数，那么我们就建立一个单节点树并将一个指向它的指针推入栈中
+			ss.push(p);
+		}
+		else {
+			//如果是运算符，则从栈中弹出两棵树T1和T2(先弹出T1)并形成一颗以操作符为根的树，其中T1为右儿子，T2为左儿子
+			p->setRightChild(ss.top());
+			ss.pop();
+			p->setLeftChild(ss.top());
+			ss.pop();
+			ss.push(p);
+		}
+		i++;
+	}
+
+	cout << endl;
+	BinaryTree<char> t;
+	t.setRoot(ss.top());
+	t.postOrder(t.getRoot());
+}

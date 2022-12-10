@@ -1,0 +1,129 @@
+#include<iostream>
+using namespace std;
+
+template<class T>
+class MaxHeap {
+public:
+	MaxHeap(int ms = 20);
+	int Size() { return CurrentSize; }
+	T Max();
+	void Insert(const T&);
+	void Delete(T&);
+	void Initialize(T a[], int n, int ArraySize);
+private:
+	T* heap;
+	int CurrentSize,//堆当前元素数
+		MaxSize;//堆最大容量
+};
+
+template<class T>
+MaxHeap<T>::MaxHeap(int ms) {
+	MaxSize = ms;
+	CurrentSize = 0;
+	heap = new T[ms + 1];
+}
+
+template<class T>
+T MaxHeap<T>::Max() {
+	try {
+		if (CurrentSize == 0) {
+			throw "the heap is empty!";
+		}
+	}
+	catch (const char* str) {
+		cout << str << endl;
+		exit(1);
+	}
+
+	return heap[1];
+}
+
+template<class T>
+void MaxHeap<T>::Insert(const T& x) {
+	//find the right position for the new element x
+
+	try {
+		if (CurrentSize == MaxSize) {
+			throw "the heap is full!";
+		}
+	}
+	catch (const char* str) {
+		cout << str << endl;
+		exit(1);
+	}
+
+	int i = ++CurrentSize;
+
+	//寻找新元素x的位置
+	//i——初始为新叶节点的位置，逐层向上，寻找最终位置（上移重整堆）
+	while (i != 1 && x > heap[i / 2]) {
+		//i不是根节点，且x的值大于其父节点，需要继续调整
+		heap[i] = heap[i / 2];//父节点下降
+		i /= 2;
+	}
+
+	heap[i] = x;
+}
+
+template<class T>
+void MaxHeap<T>::Delete(T& x) {
+	//set x to max element,delete max element from heap
+	try {
+		if (CurrenSize == 0) {
+			throw "the heap is empty!"
+		}
+	}
+	catch (const char* str) {
+		cout << str << endl;
+		exit(1);
+	}
+
+	x = heap[1];//待删除元素
+	
+	//重整堆
+	T y = heap[CurrentSize--];//取最后一个节点，从根开始重整
+	
+	//find place for y strating to root
+	int i = 1,//current node of heap
+		ci = 2;//child of i
+
+	while (ci <= CurrentSize) {
+		if (ci < CurrentSize && heap[ci] < heap[ci + 1])ci++;
+		//寻找两个孩子节点中较大者
+
+		//y的值大于孩子节点吗？
+		if (y >= heap[ci])break;//yes
+
+		//no,继续向下，重整堆
+		heap[i] = heap[ci];
+		i = ci;
+		ci *= 2;
+	}
+	heap[i] = y;
+}
+
+template<class T>
+void MaxHeap<T>::Initialize(T a[], int n, int ArraySize) {
+	//initialize max heap for array a
+	delete[]heap;
+	heap = a;
+	CurrentSize = n;
+	MaxSize = ArraySize;
+
+	//从最后一个内部节点开始，一直到根，对每个子树进行重整
+	for (int i = CurrentSize / 2; i >= 1; i--) {
+		T y = heap[i];
+		//find place to put y
+		int c = i * 2;
+
+		while (c <= CurrentSize) {
+			if (c < CurrentSize && heap[c] < heap[c + 1])c++;
+
+			if (y >= heap[c])break;
+
+			heap[c / 2] = heap[c];
+			c *= 2;
+		}
+		heap[c / 2] = y;
+	}
+}

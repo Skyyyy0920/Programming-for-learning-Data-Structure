@@ -1,0 +1,22 @@
+Input：
+AddLeft 1
+AddLeft 2
+DeleteRight
+IsFull
+DeleteLeft
+IsEmpty
+AddRight 3
+AddLeft 2
+AddRight 1
+End
+
+Output：
+1
+2 1
+2
+No
+
+Yes
+3
+2 3
+2 3 1

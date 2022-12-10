@@ -1,0 +1,576 @@
+#include<iostream>
+using namespace std;
+
+// 感想：写了三个晚上，估计用时超过八个小时，真的菜，各种bug，各种改不出来，各种指针为空报错
+// 归根结底还是自己考虑的不周全
+
+template<class T>
+class TreeNode {
+public:
+	TreeNode() { LeftChild = RightChild = 0; height = 1; parent = 0; bf = 0; LeftHeight = RightHeight = 0; }
+	TreeNode(T dat) { LeftChild = RightChild = 0; data = dat; height = 1; parent = 0; bf = 0; LeftHeight = RightHeight = 0; }
+
+	void SetData(T dat) { data = dat; }
+	void SetBalanceFactor(int balancefactor) { bf = balancefactor; }
+	void SetLeftChild(TreeNode<T>* left) { LeftChild = left; }
+	void SetRightChild(TreeNode<T>* right) { RightChild = right; }
+	void SetParent(TreeNode<T>* par) { parent = par; }
+	void SetHeight(int h) { height = h; }
+	void SetLeftTreeHeight(int h) { LeftHeight = h; }
+	void SetRightTreeHeight(int h) { RightHeight = h; }
+	int SetHeight() { return height = max(LeftHeight, RightHeight) + 1; }
+
+	T GetData() { return data; }
+	int GetBalanceFactor() { return bf; }
+	TreeNode<T>* GetLeftChild() { return LeftChild; }
+	TreeNode<T>* GetRightChild() { return RightChild; }
+	TreeNode<T>* GetParent() { return parent; }
+	int GetHeight() { return height; }
+	int GetLeftTreeHeight() { return LeftHeight; }
+	int GetRightTreeHeight() { return RightHeight; }
+private:
+	T data;
+	int bf;    // balance factor
+	TreeNode<T>* LeftChild, * RightChild;
+	TreeNode<T>* parent;
+	int LeftHeight, RightHeight;
+	int height;
+};
+
+template<class T>
+class AVL {
+public:
+	AVL() { root = 0; VirtualRoot = new TreeNode<T>; VirtualRoot->SetLeftChild(root); }
+	bool Search(T&);
+	void Insert(T&);
+	void Insert_S(T&);
+	int recursion(TreeNode<T>*, TreeNode<T>*, T h);
+	int recursion_D(TreeNode<T>*, TreeNode<T>*, T h);
+	void Delete(T&);
+	void FindAndSetL(TreeNode<T>*, TreeNode<T>*);
+
+	int SetTreeHeight(TreeNode<T>*);
+	void SetRoot(TreeNode<T>* r) { root = r; }
+
+	void LL_Rotate(TreeNode<T>*, TreeNode<T>*);
+	void RR_Rotate(TreeNode<T>*, TreeNode<T>*);
+	void LR_Rotate(TreeNode<T>*, TreeNode<T>*);
+	void RL_Rotate(TreeNode<T>*, TreeNode<T>*);
+
+	void Output();
+	void PreOrder(TreeNode<T>*);
+private:
+	TreeNode<T>* root, * VirtualRoot;
+};
+
+template<class T>
+bool AVL<T>::Search(T& x) {
+	TreeNode<T>* p = root;
+	while (p) {
+		if (x > p->data)p = p->RightChild;
+		else if (x < p->data)p = p->LeftChild;
+		else return true;
+	}
+	return false;
+}
+
+template<class T>
+int AVL<T>::SetTreeHeight(TreeNode<T>* t) {
+	// set tree height,while set balance factor
+	int l = 0, r = 0;
+	if (t->GetLeftChild())l = SetTreeHeight(t->GetLeftChild());
+	if (t->GetRightChild())r = SetTreeHeight(t->GetRightChild());
+	t->SetLeftTreeHeight(l);
+	t->SetRightTreeHeight(r);
+	t->SetHeight(max(l, r) + 1);
+	t->SetBalanceFactor(l - r);
+	return t->GetHeight();
+}
+
+template<class T>
+void AVL<T>::Insert(T& x) {
+	if (!root) {
+		TreeNode<T>* p = new TreeNode<T>(x);
+		root = p;
+		return;
+	}
+
+	// 1. 从根节点开始搜索，确定插入位置，同时寻找最后的平衡因子为1或-1的节点A
+	TreeNode<T>* p = root;
+	TreeNode<T>* pp = 0;
+	TreeNode<T>* A = 0;
+	while (p) {
+		if (x > p->GetData()) {
+			if (p->GetBalanceFactor() != 0) A = p;
+			pp = p;
+			p = p->GetRightChild();
+		}
+		else if (x < p->GetData()) {
+			if (p->GetBalanceFactor() != 0)A = p;
+			pp = p;
+			p = p->GetLeftChild();
+		}
+		else {
+			cout << "already have an element whose value is " << x << endl;
+			return;
+		}
+	}
+	// 插入
+	if (x > pp->GetData()) {
+		p = new TreeNode<T>(x);
+		pp->SetRightChild(p);
+		p->SetParent(pp);
+	}
+	else {
+		p = new TreeNode<T>(x);
+		pp->SetLeftChild(p);
+		p->SetParent(pp);
+	}
+
+	// 2. 如果不存在这样的节点A——插入后平衡，只需要从根节点重新遍历一次，修改平衡因子即可
+	if (!A) {
+		SetTreeHeight(root);	//reset tree height,in the meantime reset balance factor
+		return;
+	}
+
+	// 3. 如果存在这样的节点A
+
+	// 3.1 如果bf(A)=1且插入的是A的右子树或bf(A)=-1且插入的是A的左子树——bf(A)=0，重设从A到新节点路径上节点的平衡因子
+	if ((A->GetBalanceFactor() == 1 && x > A->GetData()) || (A->GetBalanceFactor() == -1 && x < A->GetData())) {
+		SetTreeHeight(A);
+	}
+
+	// 3.2 如果插入后导致不平衡
+	SetTreeHeight(root);
+	if (A->GetBalanceFactor() == 1) {    // 插入的是A的左子树
+		if (x < A->GetLeftChild()->GetData()) {    // LL型不平衡
+			LL_Rotate(A, A->GetParent());
+		}
+		else {    //LR型不平衡
+			LR_Rotate(A, A->GetParent());
+		}
+	}
+	else {
+		if (x > A->GetLeftChild()->GetData()) {
+			RR_Rotate(A, A->GetParent());
+		}
+		else {
+			RL_Rotate(A, A->GetParent());
+		}
+	}
+}
+
+template<class T>
+void AVL<T>::Insert_S(T& x) {
+	if (!root) {
+		TreeNode<T>* p = new TreeNode<T>(x);
+		root = p;
+		VirtualRoot->SetLeftChild(root);
+		return;
+	}
+
+	TreeNode<T>* p = root;
+	if (x < p->GetData()) {
+		if (p->GetLeftChild()) {
+			p->SetLeftTreeHeight(recursion(p->GetLeftChild(), p, x));
+		}
+		else {
+			TreeNode<T>* q = new TreeNode<T>(x);
+			p->SetLeftChild(q);
+			p->SetLeftTreeHeight(1);
+		}
+	}
+	else if (x > p->GetData()) {
+		if (p->GetRightChild()) {
+			p->SetRightTreeHeight(recursion(p->GetRightChild(), p, x));
+		}
+		else {
+			TreeNode<T>* q = new TreeNode<T>(x);
+			p->SetRightChild(q);
+			p->SetRightTreeHeight(1);
+		}
+	}
+	else {
+		cout << "already have an element whose value is " << x << endl;
+		return;
+	}
+
+	TreeNode<T>* qq = root;
+	// rotate
+	if (root->GetLeftTreeHeight() - root->GetRightTreeHeight() == 2) {
+		if (x < root->GetLeftChild()->GetData())LL_Rotate(root, VirtualRoot);    // LL
+		else if (x > root->GetLeftChild()->GetData())LR_Rotate(root, VirtualRoot);    // LR
+	}
+	else if (root->GetLeftTreeHeight() - root->GetRightTreeHeight() == -2) {
+		if (x > root->GetRightChild()->GetData())RR_Rotate(root, VirtualRoot);    // RR
+		else if (x < root->GetRightChild()->GetData())RL_Rotate(root, VirtualRoot);    // RL
+	}
+
+	SetRoot(VirtualRoot->GetLeftChild());
+	SetTreeHeight(root);
+}
+
+template<class T>
+int AVL<T>::recursion(TreeNode<T>* child, TreeNode<T>* parent, T x) {
+	TreeNode<T>* p = child;    // current node
+	int flag;
+	if (p == parent->GetLeftChild())flag = 0;
+	else flag = 1;
+
+	if (x < p->GetData()) {
+		if (p->GetLeftChild()) {
+			p->SetLeftTreeHeight(recursion(p->GetLeftChild(), p, x));
+		}
+		else {
+			TreeNode<T>* q = new TreeNode<T>(x);
+			p->SetLeftChild(q);
+			p->SetLeftTreeHeight(1);
+		}
+	}
+	else {
+		if (p->GetRightChild()) {
+			p->SetRightTreeHeight(recursion(p->GetRightChild(), p, x));
+		}
+		else {
+			TreeNode<T>* q = new TreeNode<T>(x);
+			p->SetRightChild(q);
+			p->SetRightTreeHeight(1);
+		}
+	}
+
+	if (p->GetLeftTreeHeight() - p->GetRightTreeHeight() == 2) {
+		if (x < p->GetLeftChild()->GetData())LL_Rotate(child, parent);    // LL
+		else if (x > p->GetLeftChild()->GetData())LR_Rotate(child, parent);    // LR
+	}
+	else if (p->GetLeftTreeHeight() - p->GetRightTreeHeight() == -2) {
+		if (x > p->GetRightChild()->GetData())RR_Rotate(child, parent);    // RR
+		else if (x < p->GetRightChild()->GetData())RL_Rotate(child, parent);    // RL
+	}
+
+	if (flag == 0) {
+		TreeNode<T>* qq = parent->GetLeftChild();
+		return max(qq->GetLeftTreeHeight(), qq->GetRightTreeHeight()) + 1;
+	}
+	else {
+		TreeNode<T>* qq = parent->GetRightChild();
+		return max(qq->GetLeftTreeHeight(), qq->GetRightTreeHeight()) + 1;
+	}
+}
+
+template<class T>
+void AVL<T>::FindAndSetL(TreeNode<T>* t, TreeNode<T>* parent) {
+	// t is going to be delete,find its leftchild's rightmost child and replace t's position
+	TreeNode<T>* p = t->GetLeftChild();
+	TreeNode<T>* pp = 0;
+	while (p) {
+		pp = p;
+		p = p->GetRightChild();
+	}
+
+	// 找到最右节点的父节点，将二者的联系断掉
+	TreeNode<T>* qq = t->GetLeftChild();
+	while (qq&&qq->GetRightChild()!=pp) {
+		qq = qq->GetRightChild();
+	}
+	if (qq)qq->SetRightChild(0);
+
+	// 将最右节点提上去
+	if (t == parent->GetLeftChild())parent->SetLeftChild(pp);
+	else parent->SetRightChild(pp);
+
+	if (pp != t->GetLeftChild())
+		pp->SetLeftChild(t->GetLeftChild());
+	if (t->GetRightChild())pp->SetRightChild(t->GetRightChild());
+
+	// 这里也是错了好几次，while循环找最右节点写错，
+	// 找到以后把节点提上去忘记将原来与父节点的联系断掉，这样会导致形成一个环，死循环！！！
+}
+
+template<class T>
+void AVL<T>::Delete(T& x) {
+	TreeNode<T>* p = root;
+	if (!p) {
+		cout << "the tree does not have " << x << endl;
+		return;
+	}
+	if (x > p->GetData()) {
+		if (p->GetRightChild())
+			p->SetRightTreeHeight(recursion_D(p->GetRightChild(), p, x));
+		else {
+			cout << "the tree does not have " << x << endl;
+			return;
+		}
+	}
+	else if (x < p->GetData()) {
+		if (p->GetLeftChild()) {
+			p->SetLeftTreeHeight(recursion_D(p->GetLeftChild(), p, x));
+		}
+		else {
+			cout << "the tree does not have " << x << endl;
+			return;
+		}
+	}
+	else {
+		if (p->GetLeftChild()) {
+			FindAndSetL(p, VirtualRoot);
+		}
+		else if (p->GetRightChild()) {
+			VirtualRoot->SetLeftChild(p->GetRightChild());
+			delete p;
+		}
+		else {
+			delete p;
+			VirtualRoot->SetLeftChild(0);
+			root = 0;
+			return;
+		}
+	}
+
+	SetRoot(VirtualRoot->GetLeftChild());
+	SetTreeHeight(root);
+	// 一定要重新设置root，因为这是递归，在深入几层的地方可能已经发生了旋转
+	// root可能已经被转走了，需要用virtualroot找到新的root
+
+	if (root->GetLeftTreeHeight() - root->GetRightTreeHeight() == 2) {
+		TreeNode<T>* q = root->GetLeftChild();
+		if (q->GetLeftTreeHeight() - q->GetRightTreeHeight() == 0) {    // R0型
+			LL_Rotate(root, VirtualRoot);
+		}
+		else if (q->GetLeftTreeHeight() - q->GetRightTreeHeight() == 1) {    // R1型
+			LL_Rotate(root, VirtualRoot);
+		}
+		else {    // R-1型
+			LR_Rotate(root, VirtualRoot);
+		}
+	}
+	else if (root->GetLeftTreeHeight() - root->GetRightTreeHeight() == -2) {
+		TreeNode<T>* q = root->GetRightChild();
+		if (q->GetLeftTreeHeight() - q->GetRightTreeHeight() == 0) {    // L0型
+			RR_Rotate(root, VirtualRoot);
+		}
+		else if (q->GetLeftTreeHeight() - q->GetRightTreeHeight() == 1) {    // L1型
+			RL_Rotate(root, VirtualRoot);
+		}
+		else {    // L-1型
+			RR_Rotate(root, VirtualRoot);
+		}
+	}
+
+	cout << "now " << x << " is deleted" << endl;
+	SetRoot(VirtualRoot->GetLeftChild());
+	SetTreeHeight(root);
+}
+
+template<class T>
+int AVL<T>::recursion_D(TreeNode<T>* cur, TreeNode<T>* parent, T x) {
+	int flag;
+	if (cur == parent->GetLeftChild())flag = 0;
+	else flag = 1;
+	TreeNode<T>* p = cur;
+	if (x > p->GetData()) {
+		if (p->GetRightChild()) {
+			p->SetRightTreeHeight(recursion_D(p->GetRightChild(), p, x));
+		}
+		else {
+			cout << "the tree does not have " << x << endl;
+			exit(1);
+		}
+	}
+	else if (x < p->GetData()) {
+		if (p->GetLeftChild())
+			p->SetLeftTreeHeight(recursion_D(p->GetLeftChild(), p, x));
+		else {
+			cout << "the tree does not have " << x << endl;
+			exit(1);
+		}
+	}
+	else {
+		if (p->GetLeftChild()) {
+			FindAndSetL(p, parent);
+		}
+		else if (p->GetRightChild()) {
+			if (p == parent->GetLeftChild())parent->SetLeftChild(p->GetRightChild());
+			else parent->SetRightChild(p->GetRightChild());
+			delete p;
+		}
+		else {
+			if (p == parent->GetLeftChild())parent->SetLeftChild(0);
+			else parent->SetRightChild(0);
+			delete p;
+			return 0;
+		}
+	}
+
+	SetTreeHeight(parent);
+	// 重新设置树高，很重要
+	if (flag == 0)cur = parent->GetLeftChild();
+	else cur = parent->GetRightChild();
+	// 这里一定要重新设置cur，原因同delete函数中那一处
+
+	if (cur->GetLeftTreeHeight() - cur->GetRightTreeHeight() == 2) {
+		TreeNode<T>* q = cur->GetLeftChild();
+		if (q->GetLeftTreeHeight() - cur->GetRightTreeHeight() == 0) {    // R0型
+			LL_Rotate(q, cur);
+		}
+		else if (q->GetLeftTreeHeight() - q->GetRightTreeHeight() == 1) {    // R1型
+			LL_Rotate(q, cur);
+		}
+		else {    // R-1型
+			LR_Rotate(q, cur);
+		}
+	}
+	else if (cur->GetLeftTreeHeight() - cur->GetRightTreeHeight() == -2) {
+		TreeNode<T>* q = cur->GetRightChild();
+		if (q->GetLeftTreeHeight() - q->GetRightTreeHeight() == 0) {    // L0型
+			RR_Rotate(cur, parent);
+		}
+		else if (q->GetLeftTreeHeight() - q->GetRightTreeHeight() == 1) {    // L1型
+			RL_Rotate(cur, parent);
+		}
+		else {    // L-1型
+			cout << "dwda" << endl;
+			RR_Rotate(cur, parent);
+		}
+	}
+
+	SetTreeHeight(parent);
+	// 重新设置树高，很重要
+	return p->GetHeight();
+}
+
+template<class T>
+void AVL<T>::LL_Rotate(TreeNode<T>* child, TreeNode<T>* parent) {
+	cout << "LL" << endl;
+	TreeNode<T>* Child = child;
+	TreeNode<T>* GrandChild = child->GetLeftChild();
+	TreeNode<T>* GrandGrandChild = GrandChild->GetRightChild();
+	if (Child == parent->GetLeftChild())parent->SetLeftChild(GrandChild);
+	else parent->SetRightChild(GrandChild);
+	GrandChild->SetRightChild(Child);
+	Child->SetLeftChild(GrandGrandChild);
+	// 修改树高
+	GrandChild->SetLeftTreeHeight(GrandChild->GetLeftChild()->SetHeight());
+	if (Child->GetLeftChild())
+		Child->SetLeftTreeHeight(Child->GetLeftChild()->SetHeight());
+	else
+		Child->SetLeftTreeHeight(0);
+	GrandChild->SetRightTreeHeight(GrandChild->GetRightChild()->SetHeight());
+}
+
+template<class T>
+void AVL<T>::RR_Rotate(TreeNode<T>* child, TreeNode<T>* parent) {
+	cout << "RR" << endl;
+	TreeNode<T>* Child = child;
+	TreeNode<T>* GrandChild = child->GetRightChild();
+	TreeNode<T>* GrandGrandChild = GrandChild->GetLeftChild();
+	if (Child == parent->GetLeftChild())parent->SetLeftChild(GrandChild);
+	else parent->SetRightChild(GrandChild);
+	GrandChild->SetLeftChild(Child);
+	Child->SetRightChild(GrandGrandChild);
+
+	GrandChild->SetRightTreeHeight(GrandChild->GetRightChild()->SetHeight());
+	if (Child->GetRightChild())
+		Child->SetRightTreeHeight(Child->GetRightChild()->SetHeight());
+	else
+		Child->SetRightTreeHeight(0);
+	GrandChild->SetLeftTreeHeight(GrandChild->GetRightChild()->SetHeight());
+}
+
+template<class T>
+void AVL<T>::LR_Rotate(TreeNode<T>* child, TreeNode<T>* parent) {
+	cout << "LR" << endl;
+	TreeNode<T>* GrandChild = child->GetLeftChild();
+	TreeNode<T>* GrandRightChild = GrandChild->GetRightChild();
+	TreeNode<T>* GrandGrandLeftChild = GrandRightChild->GetLeftChild();
+	TreeNode<T>* GrandGrandRightChild = GrandRightChild->GetRightChild();
+	if (child == parent->GetLeftChild())parent->SetLeftChild(GrandRightChild);
+	else parent->SetRightChild(GrandRightChild);
+	GrandRightChild->SetLeftChild(GrandChild);
+	GrandRightChild->SetRightChild(child);
+	GrandChild->SetRightChild(GrandGrandLeftChild);
+	child->SetLeftChild(GrandGrandRightChild);
+	/*if (GrandRightChild->GetBalanceFactor() == 1) {
+		GrandChild->SetBalanceFactor(0);
+		child->SetBalanceFactor(-1);
+	}
+	else if (GrandRightChild->GetBalanceFactor() == -1) {
+		GrandChild->SetBalanceFactor(1);
+		child->SetBalanceFactor(0);
+	}*/
+	// 修改树高
+	if (GrandChild->GetRightChild())
+		GrandChild->SetRightTreeHeight(GrandChild->GetRightChild()->SetHeight());
+	else
+		GrandChild->SetRightTreeHeight(0);
+	if (child->GetLeftChild())
+		child->SetLeftTreeHeight(child->GetLeftChild()->SetHeight());
+	else
+		child->SetLeftTreeHeight(0);
+	GrandRightChild->SetLeftTreeHeight(GrandRightChild->GetLeftChild()->SetHeight());
+	GrandRightChild->SetRightTreeHeight(GrandRightChild->GetRightChild()->SetHeight());
+}
+
+template<class T>
+void AVL<T>::RL_Rotate(TreeNode<T>* child, TreeNode<T>* parent) {
+	cout << "RL" << endl;
+	TreeNode<T>* GrandChild = child->GetRightChild();
+	TreeNode<T>* GrandRightChild = GrandChild->GetLeftChild();
+	TreeNode<T>* GrandGrandLeftChild = GrandRightChild->GetLeftChild();
+	TreeNode<T>* GrandGrandRightChild = GrandRightChild->GetRightChild();
+	if (child == parent->GetLeftChild())parent->SetLeftChild(GrandRightChild);
+	else parent->SetRightChild(GrandRightChild);
+	GrandRightChild->SetRightChild(GrandChild);
+	GrandRightChild->SetLeftChild(child);
+	GrandChild->SetLeftChild(GrandGrandRightChild);
+	child->SetRightChild(GrandGrandLeftChild);
+	/*if (GrandRightChild->GetBalanceFactor() == 1) {
+		GrandChild->SetBalanceFactor(-1);
+		child->SetBalanceFactor(0);
+	}
+	else if (GrandRightChild->GetBalanceFactor() == -1) {
+		GrandChild->SetBalanceFactor(0);
+		child->SetBalanceFactor(1);
+	}*/
+
+	if (GrandChild->GetLeftChild())
+		GrandChild->SetLeftTreeHeight(GrandChild->GetLeftChild()->SetHeight());
+	else
+		GrandChild->SetLeftTreeHeight(0);
+	if (child->GetRightChild())
+		child->SetRightTreeHeight(child->GetRightChild()->SetHeight());
+	else
+		child->SetRightTreeHeight(0);
+	GrandRightChild->SetLeftTreeHeight(GrandRightChild->GetLeftChild()->SetHeight());
+	GrandRightChild->SetRightTreeHeight(GrandRightChild->GetRightChild()->SetHeight());
+}
+
+template<class T>
+void AVL<T>::Output() {
+	PreOrder(root);
+	cout << endl;
+}
+
+template<class T>
+void AVL<T>::PreOrder(TreeNode<T>* t) {
+	if (t->GetLeftChild())PreOrder(t->GetLeftChild());
+	cout << t->GetData() << " ";
+	if (t->GetRightChild())PreOrder(t->GetRightChild());
+}
+
+int main() {
+	AVL<int> avl;
+	cout << "now enter 10 elements into the AVL tree" << endl;
+	for (int i = 0; i < 10; i++) {
+		int x;
+		cin >> x;
+		avl.Insert_S(x);
+	}
+	avl.Output();
+	cout << "now delete 2 elements from the AVL tree" << endl;
+	int x;
+	cin >> x;
+	avl.Delete(x);
+	cin >> x;
+	avl.Delete(x);
+	avl.Output();
+}

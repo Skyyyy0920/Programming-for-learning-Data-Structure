@@ -1,0 +1,155 @@
+#include<iostream>
+using namespace std;
+
+template<class T>
+class HeadNode;
+template<class T>
+class LinkedMatrix;
+template<class T>
+class Node {
+	friend HeadNode<T>;
+private:
+	int col;
+	T value;
+	Node<T>* next;
+};
+
+template<class T>
+class HeadNode {
+	friend LinkedMatrix<T>;
+public:
+	HeadNode(int);
+	void Append(const T&, int);
+	void GetNode(int, T&);
+	//HeadNode<T>& operator=(const HeadNode<T>&);
+private:
+	int row;
+	Node<T>* first, * last;
+	HeadNode<T>* next;
+};
+
+/*template<class T>
+HeadNode<T>& HeadNode<T>::operator=(const HeadNode<T>& x) {
+	Node<T>* temp = x.first;
+	while (temp) {
+		this->Append(temp->value, temp->col);
+		temp = temp->next;
+	}
+}*/
+
+template<class T>
+HeadNode<T>::HeadNode(int r) {
+	row = r;
+	first = last = 0;
+}
+
+template<class T>
+void HeadNode<T>::Append(const T& x, int c) {
+	Node<T>* p;
+	p->next = 0;
+	p->col = c;
+	p->value = x;
+	if (first) {//list not empty
+		last->next = p;
+		last = p;
+	}
+	else {
+		first = last = p;
+	}
+}
+
+template<class T>
+void HeadNode<T>::GetNode(int j, T& x) {
+	Node<T>* p = first;
+	while (p) {
+		if (p->col == j) {
+			x = p->value;
+			return;
+		}
+		p = p->next;
+	}
+	if (p) {
+		cout << "nope";
+		return;
+	}
+	
+}
+
+template<class T>
+class LinkedMatrix {
+public:
+	LinkedMatrix(int, int);
+	void Append(HeadNode<T>*);
+	void GetNode(int, int, T&);
+	LinkedMatrix<T>& operator=(const LinkedMatrix<T>&);
+	LinkedMatrix<T> operator+(const LinkedMatrix<T>&);
+private:
+	int rows, cols;
+	HeadNode<T>* first, * last;
+};
+
+template<class T>
+LinkedMatrix<T>& LinkedMatrix<T>::operator=(const LinkedMatrix<T>& x) {
+	HeadNode<T>* temp = x.first;
+	while (temp) {
+		HeadNode<T>* p = new HeadNode<T>(temp->row);
+		Node<T>* q = temp->first;
+		while (q) {
+			p->Append(q->value, q->col);
+		}
+		this->Append(p);
+		temp = temp->next;
+	}
+}
+
+template<class T>
+LinkedMatrix<T> LinkedMatrix<T>::operator+(const LinkedMatrix<T>& x) {
+	int r = max(this->rows, x.rows);
+	int c = max(this->cols, x.cols);
+	LinkedMatrix<T> res(r, c);
+
+
+}
+
+template<class T>
+LinkedMatrix<T>::LinkedMatrix(int r, int c) {
+	rows = r, cols = c;
+	first = last = 0;
+}
+
+template<class T>
+void LinkedMatrix<T>::Append(HeadNode<T>* x) {
+	if (first) {//list not empty
+		last->next = x;
+		last = x;
+	}
+	else {
+		first = last = x;
+	}
+}
+
+template<class T>
+void LinkedMatrix<T>::GetNode(int i, int j, T& x) {
+	if ((i > rows || j > cols) || (i <= 0 || j <= 0)) {
+		cout << "out of bounds";
+		return;
+	}
+	HeadNode<T>* p = first;
+	while (p) {
+		if (p->row == i) {
+			p->GetNode(j, x);
+			return;
+		}
+		p = p->next;
+	}
+	if (p) {
+		cout << "nope";
+		return;
+	}
+}
+
+
+
+int main() {
+
+}

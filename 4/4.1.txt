@@ -1,0 +1,141 @@
+#include<iostream>
+using namespace std;
+
+const int MAXSIZE = 100010;
+int a[MAXSIZE];
+bool s[MAXSIZE];
+
+class List {
+public:
+	List(int n) { array = new int[n + 1]; len = n; for (int i = 1; i <= len; i++)array[i - 1] = i; }
+	void Pop(int);
+	void game(int);
+private:
+	int* array;
+	int len;
+};
+
+void List::Pop(int i) {
+	cout << array[i] << " ";
+	for (int j = i; j < len; j++)array[j] = array[j + 1];
+}
+
+void List::game(int m) {
+	int now = 0;
+	while (len > 0) {
+		now = (now + m - 1) % len;
+		Pop(now);
+		len--;
+	}
+}
+
+void Initialize(int n) {
+	for (int i = 0; i < n; i++)
+		a[i] = i + 1, s[i] = 1;
+}
+void Game(int m,int n) {
+	int now = 0;
+	int times = n;
+	while (times--) {
+		int count = m - 1;
+		while (count) {
+			now = (now + 1) % (n + 1);
+			if (s[now])count--;
+		}
+		cout << a[now] << " ";
+		s[now] = 0;
+		while (!s[now] && times)now = (now + 1) % (n + 1);
+	}
+}
+
+template<class T>
+class chain;
+template<class T>
+class node {
+	friend chain<T>;
+private:
+	T data;
+	node<T>* next;
+};
+
+template<class T>
+class chain {
+public:
+	chain() { first = 0; last = 0; len = 0; }
+	void pushback(T);
+	void remove(int, T&);
+	int getLen() { return len; }
+private:
+	node<T>* first, *last;
+	int len;
+};
+
+template<class T>
+void chain<T>::pushback(T x) {
+	node<T>* p = new node<T>;
+	p->data = x;
+	p->next = 0;
+	if (first) {
+		last->next = p;
+		last = p;
+	}
+	else {
+		first = last = p;
+	}
+	len++;
+}
+
+template<class T>
+void chain<T>::remove(int index, T& x) {
+	if (index < 0) {
+		cout << "wrong";
+		return;
+	}
+	node<T>* p = first;
+	if (index == 0) {
+		x = first->data;
+		first = first->next;
+		len--;
+		delete p;
+		return;
+	}//如果删除的是表头
+	int i = 1;
+	while (p && i < index) {
+		p = p->next;
+		i++;
+	}//找到要删除节点的前一个
+	if (!p || !p->next) {
+		cout << "out of bounds";
+		return;
+	}//如果超界，报错
+	node<T>* q = p->next;
+	x = q->data;
+	p->next = q->next;
+	delete q;
+	len--;
+}
+
+
+int main() {
+	int n, m;
+	cin >> n >> m;
+	Initialize(n);
+	Game(m, n);
+	cout << endl;
+
+	List a(n);
+    a.game(m);
+	cout << endl;
+
+	chain<int> x;
+	for (int i = 1; i <= n; i++)x.pushback(i);
+	int now = 0;
+	int count = n;
+	while (count--) {
+		now = (now + m - 1) % x.getLen();
+		int a;
+		x.remove(now, a);
+		cout << a << " ";
+	}
+
+}

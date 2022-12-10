@@ -1,0 +1,58 @@
+#include<iostream>
+using namespace std;
+
+template<class T>
+class Chain;
+template<class T>
+class ChainNode {
+	friend Chain<T>;
+private:
+	int data;
+	ChainNode<T>* next;
+};
+
+template<class T>
+class Chain {
+public:
+	void binsort(int range);
+private:
+	ChainNode<T>* firstnode;
+};
+
+template<class T>
+void Chain<T>::binsort(int range) {
+	ChainNode<T>** bottom, ** top;
+	bottom = new ChainNode<T>*[range + 1];
+	top = new ChainNode<T>*[range + 1];
+	for (int i = 0; i <= range; i++)
+		bottom[i] = 0;
+
+	//把链表的节点分配到箱子
+	while (firstnode) {
+		int thebin = firstnode->data;
+		if (bottom[thebin]) {//箱子不为空
+			top[thebin]->next = firstnode;
+			top[thebin] = firstnode;
+		}
+		else {//箱子为空
+			top[thebin] = bottom[thebin] = firstnode;
+		}
+		firstnode = firstnode->next;
+	}
+
+	//把箱子中的节点收集到有序链表（把几个箱子头尾相连）
+	ChainNode<T>* y = 0;
+	for (int thebin = 0; thebin <= range; thebin++) {
+		if (bottom[thebin]) {
+			if (!y)//第一个非空箱子
+				firstnode = bottom[thebin];
+			else//不是第一个非空箱子
+				y->next = bottom[thebin];
+			y = top[thebin];
+		}
+	}
+	if (y)y->next = 0;
+	
+	delete[]bottom;
+	delete[]top;
+}

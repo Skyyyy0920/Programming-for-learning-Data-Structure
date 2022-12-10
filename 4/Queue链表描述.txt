@@ -1,0 +1,64 @@
+#include<iostream>
+using namespace std;
+
+template<class T>
+class LinkedQueue;
+template<class T>
+class node {
+	friend LinkedQueue<T>;
+private:
+	T data;
+	node<T>* next;
+};
+
+template<class T>
+class LinkedQueue {
+public:
+	LinkedQueue() { front = rear = 0; }
+	bool IsEmpty() { return front; }
+	T First()const;
+	T Last()const;
+	LinkedQueue<T>& Add(const T&);
+	LinkedQueue<T>& Delete(T&);
+private:
+	node<T>* front,//队首
+		* rear;//队尾
+};
+
+template<class T>
+T LinkedQueue<T>::First()const {
+	if (IsEmpty())cout << "wrong";
+	return front->data;
+}
+
+template<class T>
+T LinkedQueue<T>::Last()const {
+	if (IsEmpty())cout << "wrong";
+	return rear->data;
+}
+
+template<class T>
+LinkedQueue<T>& LinkedQueue<T>::Add(const T& x) {
+	node<T>* p;
+	p->data = x;
+	p->next = 0;
+	if (front) {
+		front = rear = p;
+	}
+	else {
+		rear->next = p;
+		rear = p;
+	}
+	return *this;
+}
+
+template<class T>
+LinkedQueue<T>& LinkedQueue<T>::Delete(T& x) {
+	if (front) {
+		node<T>* p = front;
+		x = front->data;
+		front = front->next;
+		delete p;
+	}
+	return *this;
+}

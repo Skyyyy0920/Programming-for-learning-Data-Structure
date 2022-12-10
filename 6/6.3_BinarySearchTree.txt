@@ -1,0 +1,168 @@
+#include<iostream>
+#include<queue>
+using namespace std;
+
+template<class T>
+class BinarySearchTree;
+template<class T>
+class TreeNode {
+	friend BinarySearchTree<T>;
+public:
+	TreeNode() { leftchild = Rightchild = 0; level = 0; }
+private:
+	TreeNode<T>* leftchild;
+	TreeNode<T>* Rightchild;
+	T data;
+	int level;
+};
+
+template<class T>
+class BinarySearchTree {
+public:
+	BinarySearchTree(int m = 20, TreeNode<T>* init = 0);
+	void insert(T&);
+	//void pop(T&);
+	TreeNode<T>* search(T&);
+	int GetMaxWidth() { return MaxWidth; }
+	int GetLeafNumber() { return LeafNumber; }
+	TreeNode<T>* GetRoot() { return root; }
+	void PreOrder(TreeNode<T>*);
+	void InOrder(TreeNode<T>*);
+	void visit(TreeNode<T>* p) { cout << p->data << " "; }
+	void exchange(TreeNode<T>*);
+	void LevelTraversal();
+private:
+	TreeNode<T>* root;
+	int LeafNumber;
+	int* width;
+	int MaxWidth;
+};
+
+template<class T>
+BinarySearchTree<T>::BinarySearchTree(int m, TreeNode<T>* init) {
+	root = init;
+	LeafNumber = 0;
+	width = new int[m + 1];
+	for (int i = 1; i <= m; i++)width[i] = 0;
+	MaxWidth = 0;
+}
+
+template<class T>
+void BinarySearchTree<T>::insert(T& value) {
+	if (!root) {//如果根节点为空
+		root = new TreeNode<T>;
+		root->data = value;
+		root->level = 1;
+		width[1] = 1;
+		MaxWidth = 1;
+		LeafNumber++;
+		return;
+	}
+
+	TreeNode<T>* q = 0;
+	TreeNode<T>* p = root;//寻找插入位置，其中q为p的父亲节点
+	while (p) {
+		if (value < p->data) {
+			q = p;
+			p = p->leftchild;
+		}
+		else {
+			q = p;
+			p = p->Rightchild;
+		}
+	}
+
+	p = new TreeNode<T>;
+	p->data = value;
+	p->level = q->level + 1;
+	width[p->level]++;
+	MaxWidth = max(MaxWidth, width[p->level]);
+
+	if (value < q->data) {//即将成为父亲节点的左孩子
+		q->leftchild = p;
+		if (q->Rightchild)LeafNumber++;
+		//如果其父亲节点以前有右孩子，插入此节点后叶节点加一（反之，如果父亲节点以前没有右孩子，插入此节点以后，父亲节点变成非叶节点，此节点变成叶节点，叶节点总数不变）
+	}
+	else {
+		q->Rightchild = p;
+		if (q->leftchild)LeafNumber++;
+		//同理
+	}
+}
+
+template<class T>
+TreeNode<T>* BinarySearchTree<T>::search(T& value) {
+	TreeNode<T>* p = root;
+	while (p) {
+		if (p->data == value)return p;
+		if (value < p->data)p = p->leftchild;
+		else p = p->Rightchild;
+	}
+	return 0;
+}
+
+template<class T>
+void BinarySearchTree<T>::PreOrder(TreeNode<T>* t) {
+	//前序遍历树*t
+	if (t) {
+		visit(t);
+		PreOrder(t->leftchild);
+		PreOrder(t->Rightchild);
+	}
+}
+
+template<class T>
+void BinarySearchTree<T>::InOrder(TreeNode<T>* t) {
+	//中序遍历树*t
+	if (t) {
+		InOrder(t->leftchild);
+		visit(t);
+		InOrder(t->Rightchild);
+	}
+}
+
+template<class T>
+void BinarySearchTree<T>::exchange(TreeNode<T>* t) {
+	if (t->leftchild)exchange(t->leftchild);
+	if (t->Rightchild)exchange(t->Rightchild);
+    
+	TreeNode<T>* temp;
+	temp = t->leftchild;
+	t->leftchild = t->Rightchild;
+	t->Rightchild = temp;
+}
+
+template<class T>
+void BinarySearchTree<T>::LevelTraversal() {
+	cout << "the result of level traversal is:" << endl;
+	queue<TreeNode<T>*>que;
+	que.push(root);
+	while (!que.empty()) {
+		TreeNode<T>* p = que.front();
+		cout << p->data << " ";
+		que.pop();
+		if (p->leftchild)que.push(p->leftchild);
+		if (p->Rightchild)que.push(p->Rightchild);
+	}
+	cout << endl;
+}
+
+int main() {
+	BinarySearchTree<int> t;
+	int x;
+	for (int i = 0; i < 10; i++) {
+		cin >> x;
+		t.insert(x);
+	}
+	cout << "the number of leaves is: " << t.GetLeafNumber() << endl;
+	cout << "the number of maxwidth is: " << t.GetMaxWidth() << endl;
+	cout << endl;
+	t.InOrder(t.GetRoot());
+	cout << endl;
+	cout << endl;
+	t.LevelTraversal();
+	cout << endl;
+	cout << "exchange all leftchild and rightchild:" << endl;
+	t.exchange(t.GetRoot());
+	t.InOrder(t.GetRoot());
+}

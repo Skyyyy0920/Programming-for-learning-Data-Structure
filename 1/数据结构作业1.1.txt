@@ -1,0 +1,45 @@
+#include<iostream>
+#include<string>
+#include<iomanip>
+#include<math.h>
+#include<stdio.h>
+#include<fstream>
+using namespace std;
+
+long long fibonacci(int n, long long first, long long second) {
+	if (n <= 1)return first;
+	else return fibonacci(n - 1, second,first+second);
+}
+
+int main() {
+	ifstream text("input.txt");
+	char ch;
+	text.get(ch);
+	string res = "";
+	while (!text.eof()) {
+		res += ch;
+		text.get(ch);
+	}
+	//得到txt文件中的内容
+
+	int i = 0;
+	int num = 0;
+	while (res[i]) {
+		if (res[i] >= '0' && res[i] <= '9') {
+			num = num * 10 + (res[i] - '0');
+			i++;
+		}
+		else {
+			cout << "WRONG";
+			return 0;
+		}
+	}
+	if (num > 0 && num <= 90);
+	else {
+		cout << "WRONG";
+		return 0;
+	}
+	//处理得到的内容
+
+	cout << fibonacci(num, 1, 1);
+}

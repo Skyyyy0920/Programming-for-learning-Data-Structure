@@ -1,0 +1,145 @@
+#include<iostream>
+using namespace std;
+
+template<class T>
+class Chain;
+
+template<class T>
+class ChainNode {
+	friend Chain<T>;
+private:
+	T data;
+	ChainNode<T>* link;
+};
+
+template<class T>
+class Chain {
+public:
+	Chain() { first = 0; }
+	~Chain();
+	bool IsEmpty()const { return first == 0 };
+	int Length()const;
+	bool Find(int k, T& x)const;
+	int Search(const T& x)const;
+	Chain<T>& Delete(int k, T& x);
+	Chain<T>& Insert(int k, const T& x);
+	Chain<T>& fromlastinsert(const T& x);
+	void Output(ostream& out)const;
+private:
+	ChainNode<T>* first, * last;
+};
+
+template<class T>
+Chain<T>::~Chain() {
+	ChainNode<T>* temp;
+	while (first) {
+		temp = first->link;
+		delete first;
+		first = temp;
+	}
+}
+
+template<class T>
+int Chain<T>::Length()const {
+	ChainNode<T>* temp = first;
+	int length = 0;
+	while (temp) {
+		temp = temp->link;
+		length++;
+	}
+	return length;
+}
+
+template<class T>
+bool Chain<T>::Find(int k, T& x)const {
+	if (k < 1)return false;
+	ChainNode<T>* current = first;
+	int index = 1;
+	while (index < k && current) {
+		index++;
+		current = current->link;
+	}
+	if (current) {
+		x = current->data;
+		return true;
+	}
+	return false;
+}
+
+template<class T>
+int Chain<T>::Search(const T& x)const {
+	int index = 1;
+	ChainNode<T>* current = first;
+	while (current && current->data != x) {
+		current = current->link;
+		index++;
+	}
+	if (current)return index;
+	return 0;
+}
+
+template<class T>
+void Chain<T>::Output(ostream& out)const {
+	ChainNode<T>* current = first;
+	while (current) {
+		out << current->data << " ";
+		current = current->link;
+	}
+}
+
+template<class T>
+ostream& operator<<(ostream& out, const Chain<T>& x) {
+	x.Output(out);
+	return out;
+}
+
+template<class T>
+Chain<T>& Chain<T>::Delete(int k, T& x) {
+	if (k < 1 || first)cout << "目标非法，因角标过小或列表为空";
+	ChainNode<T>* p = first;
+	if (k == 1)first = first->link;
+	else {
+		ChainNode<T>* q;
+		for (int index = 1; index < k && p; index++)
+			p = p->link;
+		if (!p || !p->link)cout << "目标非法，超出列表长度";
+		q = p->link;
+		p->link = q->link;
+	}
+	x = q->data;
+	delete q;
+	return *this;
+}
+
+template<class T>
+Chain<T>& Chain<T>::Insert(int k, const T& x) {
+	if (k < 0)cout << "目标非法，因角标过小";
+	ChainNode<T>* current = first;
+	for (int index = 1; index < k && current; index++)
+		current = current->link;
+	if (k > 0 && !current)cout << "超出列表长度";
+	ChainNode<T>* p = new ChainNode<T>;
+	p->data = x;
+	if (k) {
+		p->link = current->link;
+		current->link = p;
+	}
+	else {
+		p->link = first;
+		first = p;
+	}
+	return *this;
+}
+
+template<class T>
+Chain<T>& Chain<T>::fromlastinsert(const T& x) {
+	ChainNode<T>* p = new ChainNode<T>;
+	p->data = x;
+	if (first) {
+		last->link = p;
+		last = p;
+	}
+	else {
+		first = last = p;
+	}
+}

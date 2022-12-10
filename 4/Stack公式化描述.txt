@@ -1,0 +1,41 @@
+#include<iostream>
+using namespace std;
+
+template<class T>
+class Stack {
+public:
+	Stack(int MaxStackSize = 10) { top = -1; MaxTop = MaxStackSize; stack = new T[MaxTop + 1]; }
+	bool IsEmpty()const { return top == -1; }
+	bool IsFull()const { return top == MaxTop; }
+	T Top()const;
+	Stack<T>& Push(const T& x);
+	Stack<T>& Pop(T& x);
+private:
+	int top;
+	int MaxTop;
+	T* stack;
+};
+
+template<class T>
+T Stack<T>::Top()const {
+	if (IsEmpty())cout << "wrong";
+	return stack[top];
+}
+
+template<class T>
+Stack<T>& Stack<T>::Push(const T& x) {
+	if (IsFull())cout << "worng";
+	stack[++top] = x;
+	return *this;
+}
+
+template<class T>
+Stack<T>& Stack<T>::Pop(T& x) {
+	if (IsEmpty())cout << "wrong";
+	x = stack[top--];
+	return *this;
+}
+
+int main() {
+
+}

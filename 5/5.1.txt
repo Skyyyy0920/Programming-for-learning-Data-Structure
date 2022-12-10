@@ -1,0 +1,146 @@
+#include<iostream>
+#include<vector>
+using namespace std;
+
+class HashTable {
+public:
+	HashTable(int div = 23);
+	bool Search(const int&);
+	void Insert(const int&);
+	void Delete(const int&);
+	void Output();
+private:
+	const int NONE = -1000000001;
+	bool* NeverUsed;
+	int* ht;
+	int divisor;
+	int used;
+	int Hash(const int& x)const { return abs(x) % divisor; }
+	void Reset(int);
+};
+
+HashTable::HashTable(int div) {
+	used = 0;
+	divisor = div;
+	ht = new int[div];
+	NeverUsed = new bool[div];
+	for (int i = 0; i < div; i++) {
+		NeverUsed[i] = true;
+	}
+}
+
+void HashTable::Insert(const int& x) {
+	int h = Hash(x);
+	int count = 0;
+	while (!NeverUsed[h] && count < divisor) {
+		if (x == ht[h]) {
+			cout << "repeat" << endl;
+			return;
+		}
+		h = (h + 1) % divisor;
+		count++;
+	}
+	try {
+		if (NeverUsed[h]) {
+			ht[h] = x;
+			NeverUsed[h] = false;
+			used++;
+			cout << "now input the element " << x << endl;
+			if (float(used) / float(divisor) > 0.6)Reset(divisor * 3);
+			return;
+		}
+		throw "the hashtable is full!";
+	}
+	catch (const char* str) {
+		cout << str << endl;
+		return;
+	}
+}
+
+bool HashTable::Search(const int& x) {
+	int h = Hash(x);
+	int count = 0;
+	while (!NeverUsed[h] && count < divisor) {
+		if (ht[h] == x) return true;
+		h = (h + 1) % divisor;
+	}
+	return false;
+}
+
+void HashTable::Delete(const int& x) {
+	int h = Hash(x);
+	int count = 0;
+	try {
+		while (!NeverUsed[h] && count < divisor) {
+			if (ht[h] == x) {
+				used--;
+				ht[h] = NONE;
+				cout << "now delete the element " << x << endl;
+				return;
+			}
+			h = (h + 1) % divisor;
+		}
+		throw "cannot delete a nonexist element";
+	}
+	catch (const char* str) {
+		cout << str << endl;
+		return;
+	}
+}
+
+void HashTable::Reset(int x) {
+	cout << endl;
+	cout << "cause usedratio is over 0.6,now reset this hashtable" << endl;
+	vector<int>vec;
+	for (int i = 0; i < divisor; i++) {
+		if (!NeverUsed[i] && ht[i] != NONE) {
+			vec.push_back(ht[i]);
+		}
+	}
+
+	//delete[]ht;
+	//delete[]NeverUsed;
+	divisor = x;
+	ht = new int[divisor];
+	NeverUsed = new bool[divisor];
+	used = 0;
+	for (int i = 0; i < divisor; i++)
+		NeverUsed[i] = true;
+	cout << "now set a new hashtable,whose size is " << divisor << endl;
+	cout << endl;
+	for (auto& value : vec) {
+		Insert(value);
+	}
+}
+
+void HashTable::Output() {
+	cout << "the elements in this hashtable:" << endl;
+	for (int i = 0; i < divisor; i++) {
+		if (!NeverUsed[i] && ht[i] != NONE) {
+			cout << "hashvalue: " << i << "  " << "value: " << ht[i] << endl;
+		}
+	}
+}
+
+int main() {
+	HashTable t;
+	int x;
+	for (int i = 0; i < 10; i++) {
+		cin >> x;
+		t.Insert(x);
+	}
+	cout << endl;
+	for (int i = 0; i < 3; i++) {
+		cin >> x;
+		t.Delete(x);
+	}
+	cout << endl;
+	t.Output();
+	cout << endl;
+	for (int i = 0; i < 10; i++) {
+		cin >> x;
+		t.Insert(x);
+	}
+	cout << endl;
+	t.Output();
+}
